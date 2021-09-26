@@ -1,0 +1,8 @@
+.loader {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    height: 15%;
+    width: 15%;
+    transform: translate(-50%, -50%)
+}
