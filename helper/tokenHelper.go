@@ -6,7 +6,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/shaswata56/ecom-backend/database"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"os"
@@ -14,23 +13,23 @@ import (
 )
 
 type SignedComponent struct {
-	Email		string
-	UserName	string
-	UserId		string
-	UserType	string
+	Email    string
+	UserName string
+	UserId   string
+	UserType string
 	jwt.StandardClaims
 }
 
-var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user_auth")
+var userCollection = database.OpenCollection(database.Client, "user_auth")
 
-var SecretKey string = os.Getenv("SECRET_KEY")
+var SecretKey = os.Getenv("SECRET_KEY")
 
 func GenerateAllTokens(email, userName, userType, uid string) (signedToken, signedRefreshToken string, err error) {
 	claims := &SignedComponent{
-		Email:          email,
-		UserName: 		userName,
-		UserId:         uid,
-		UserType:		userType,
+		Email:    email,
+		UserName: userName,
+		UserId:   uid,
+		UserType: userType,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
 		},
@@ -88,10 +87,10 @@ func UpdateAllTokens(signedToken, signedRefreshToken, userId string) {
 	updatedAt, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	updateObj := bson.M{"$set": bson.M{
-		"token": signedToken,
+		"token":        signedToken,
 		"refreshtoken": signedRefreshToken,
-		"updatedat": updatedAt,
-		},
+		"updatedat":    updatedAt,
+	},
 	}
 
 	upsert := true

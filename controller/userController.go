@@ -46,6 +46,7 @@ func SignUp() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var user models.User
 
+		defer cancel()
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -58,26 +59,27 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
-		defer cancel()
 		if err != nil {
-			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occurred while checking for the Email"})
+			log.Panic(err)
+			return
+		}
+		if count > 0 {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "This email is already registered"})
 			return
 		}
 
 		password := HashPassword(*user.Password)
 		user.Password = &password
 
-		count, err = userCollection.CountDocuments(ctx, bson.M{"user_name": user.UserName})
-		defer cancel()
+		count, err = userCollection.CountDocuments(ctx, bson.M{"username": user.UserName})
 		if err != nil {
-			log.Fatal(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occurred while checking for the Username"})
+			log.Fatal(err)
 			return
 		}
-
 		if count > 0 {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "This Email or Phone number already registered"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "This username is already registered"})
 			return
 		}
 
@@ -98,7 +100,6 @@ func SignUp() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
-		defer cancel()
 
 		c.JSON(http.StatusOK, models.Status{Success: true})
 	}
@@ -183,7 +184,7 @@ func GetUsers() gin.HandlerFunc {
 		result, err := userCollection.Aggregate(
 			ctx,
 			mongo.Pipeline{
-			matchStage, groupStage, projectStage},
+				matchStage, groupStage, projectStage},
 		)
 		defer cancel()
 
@@ -219,5 +220,11 @@ func GetUser() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, user)
- 	}
+	}
+}
+
+func Verify() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"userid": c.GetString("userid")})
+	}
 }
